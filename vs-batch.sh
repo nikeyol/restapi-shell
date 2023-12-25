@@ -1,12 +1,12 @@
 #!/bin/sh
-#set -vx
+set -vx
 url_base="https://192.168.1.3/api"
 
 
 content_type="application/json"
 milos_tenant="admin"
-milos_csrf="DR8zu8o4nvt4yyNCP4ClK4KQ5dof8guD"
-milos_cookie="csrftoken=DR8zu8o4nvt4yyNCP4ClK4KQ5dof8guD; sessionid=d5xr2be0091wy4krbbpys68amfixddmd"
+milos_csrf="Hp1v9VrfmsFpQGlCw9K0QJ2nBL4irbHc"
+milos_cookie="csrftoken=Hp1v9VrfmsFpQGlCw9K0QJ2nBL4irbHc; sessionid=4h0363w6w464n28dorxuq8ou11k88icc"
 milos_refer="https://192.168.1.3/"
 
 milos_appfile="applicationprofile"
@@ -14,6 +14,9 @@ milos_netfile="networkprofile"
 milos_pool="pool"
 milos_svc="service"
 milos_vs="virtualservice"
+
+ip_3="192.168.1.3"
+ip_8="192.168.1.8"
 
 #Get Tenant
 tenant="https://192.168.1.3/api/tenant/admin"
@@ -38,16 +41,308 @@ echo "seg url is $milos_seg"
 sleep 3
 
 #Get SE
-milos_se=$(curl -k -s $url_base/serviceengine -H "X-Csrftoken: $milos_csrf" \
+milos_se_url=$(curl -k -s $url_base/serviceengine -H "X-Csrftoken: $milos_csrf" \
 -H "X-Avi-Tenant: admin" \
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
---cookie "$milos_cookie" | jq -r '.results[0].url')
-echo "se url is $milos_se"
+--cookie "$milos_cookie" | jq -r '.results[]|.url')
+echo "se url is $milos_se_url"
 sleep 3
 
-#Config Data Nic IP for SE
+se_11_json_data=$(cat <<EOF
+{
+  "name": "192.168.1.11",
+  "tenant_ref": "$tenant",
+  "cloud_ref": "$milos_cloud",
+  "se_group_ref": "$milos_seg",
+  "container_mode": false,
+  "controller_created": false,
+  "mgmt_vnic": {
+    "port_uuid": "Unknown",
+    "is_portchannel": false,
+    "can_se_dp_takeover": true,
+    "is_avi_internal_network": false,
+    "adapter": "Unknown",
+    "mac_address": "00:50:56:83:39:c7",
+    "enabled": true,
+    "if_name": "eth0",
+    "dhcp_enabled": false,
+    "del_pending": false,
+    "is_mgmt": true,
+    "connected": true,
+    "vnic_networks": [
+      {
+        "ip": {
+          "ip_addr": {
+            "type": "V4",
+            "addr": "192.168.1.11"
+          },
+          "mask": 24
+        },
+        "ctlr_alloc": false,
+        "mode": "DHCP"
+      }
+    ],
+    "vrf_id": 0,
+    "mtu": 1500,
+    "linux_name": "eth0",
+    "vlan_id": 0,
+    "vrf_ref": "$milos_vrf"
+  },
+  "hypervisor": "DEFAULT",
+  "enable_state": "SE_STATE_ENABLED",
+  "data_vnics": [
+    {
+      "port_uuid": "Unknown",
+      "is_portchannel": false,
+      "can_se_dp_takeover": true,
+      "is_avi_internal_network": false,
+      "adapter": "Unknown",
+      "mac_address": "00:50:56:83:29:93",
+      "enabled": true,
+      "if_name": "eth1",
+      "dhcp_enabled": false,
+      "del_pending": false,
+      "is_mgmt": false,
+      "connected": true,
+      "vnic_networks": [
+        {
+          "ip": {
+            "ip_addr": {
+              "type": "V4",
+              "addr": "192.168.1.226"
+            },
+            "mask": 24
+          },
+          "ctlr_alloc": false,
+          "mode": "STATIC"
+        }
+      ],
+      "vrf_id": 0,
+      "mtu": 1500,
+      "linux_name": "eth2",
+      "vlan_id": 0,
+      "vrf_ref": "$milos_vrf"
+    },
+    {
+      "port_uuid": "Unknown",
+      "is_portchannel": false,
+      "can_se_dp_takeover": true,
+      "is_avi_internal_network": false,
+      "adapter": "Unknown",
+      "enabled": true,
+      "if_name": "eth3",
+      "dhcp_enabled": false,
+      "del_pending": false,
+      "is_mgmt": false,
+      "connected": true,
+      "mac_address": "00:50:56:83:73:55",
+      "vrf_id": 0,
+      "mtu": 1500,
+      "linux_name": "eth3",
+      "vlan_id": 0,
+      "vrf_ref": "$milos_vrf"
+    },
+    {
+      "port_uuid": "Unknown",
+      "is_portchannel": false,
+      "can_se_dp_takeover": true,
+      "is_avi_internal_network": false,
+      "adapter": "Unknown",
+      "mac_address": "00:50:56:83:a4:74",
+      "enabled": true,
+      "if_name": "eth2",
+      "dhcp_enabled": false,
+      "del_pending": false,
+      "is_mgmt": false,
+      "connected": true,
+      "vnic_networks": [
+        {
+          "ip": {
+            "ip_addr": {
+              "type": "V4",
+              "addr": "10.0.0.226"
+            },
+            "mask": 24
+          },
+          "ctlr_alloc": false,
+          "mode": "STATIC"
+        }
+      ],
+      "vrf_id": 0,
+      "mtu": 1500,
+      "linux_name": "eth1",
+      "vlan_id": 0,
+      "vrf_ref": "$milos_vrf"
+    }
+  ],
+  "flavor": "",
+  "resources": {
+    "cores_per_socket": 1,
+    "num_vcpus": 2,
+    "hyper_threading": false,
+    "memory": 2001,
+    "disk": 13,
+    "sockets": 2
+  },
+  "vnic": [
+    {
+      "is_portchannel": false,
+      "is_avi_internal_network": false,
+      "present_in_se": true,
+      "mtu": 1500,
+      "state": "VNIC_STATE_UNKNOWN",
+      "is_mgmt": false,
+      "mac_addr": "00:50:56:83:29:93",
+      "present_in_vinfra": false
+    },
+    {
+      "is_portchannel": false,
+      "is_avi_internal_network": false,
+      "present_in_se": true,
+      "mtu": 1500,
+      "state": "VNIC_STATE_UNKNOWN",
+      "is_mgmt": false,
+      "mac_addr": "00:50:56:83:39:c7",
+      "present_in_vinfra": false
+    },
+    {
+      "is_portchannel": false,
+      "is_avi_internal_network": false,
+      "present_in_se": true,
+      "mtu": 1500,
+      "state": "VNIC_STATE_UNKNOWN",
+      "is_mgmt": false,
+      "mac_addr": "00:50:56:83:73:55",
+      "present_in_vinfra": false
+    },
+    {
+      "is_portchannel": false,
+      "is_avi_internal_network": false,
+      "present_in_se": true,
+      "mtu": 1500,
+      "state": "VNIC_STATE_UNKNOWN",
+      "is_mgmt": false,
+      "mac_addr": "00:50:56:83:a4:74",
+      "present_in_vinfra": false
+    }
+  ]
+}
+EOF)
 
+se_12_json_data=$(cat <<EOF
+{
+   "tenant_ref":"$tenant",
+   "se_group_ref":"$milos_seg",
+   "container_mode":false,
+   "vnic_replay_done":true,
+   "cloud_ref":"$milos_cloud",
+   "enable_state":"SE_STATE_ENABLED",
+   "name":"192.168.1.11",
+   "gateway_up":true,
+   "hypervisor":"DEFAULT",
+   "data_vnics":[
+      {
+         "port_uuid":"Unknown",
+         "is_portchannel":false,
+         "can_se_dp_takeover":true,
+         "is_avi_internal_network":false,
+         "adapter":"Unknown",
+         "mac_address":"00:0c:29:bd:98:01",
+         "enabled":true,
+         "if_name":"eth2",
+         "dhcp_enabled":false,
+         "del_pending":false,
+         "is_mgmt":false,
+         "connected":true,
+         "vnic_networks":[
+            {
+               "ip":{
+                  "ip_addr":{
+                     "type":"V4",
+                     "addr":"10.0.0.225"
+                  },
+                  "mask":24
+               },
+               "ctlr_alloc":false,
+               "mode":"STATIC"
+            }
+         ],
+         "vrf_id":0,
+         "mtu":1500,
+         "linux_name":"eth1",
+         "vlan_id":0,
+         "vrf_ref":"$milos_vrf"
+      },
+      {
+         "port_uuid":"Unknown",
+         "is_portchannel":false,
+         "can_se_dp_takeover":true,
+         "is_avi_internal_network":false,
+         "adapter":"Unknown",
+         "mac_address":"00:0c:29:bd:98:0b",
+         "enabled":true,
+         "if_name":"eth1",
+         "dhcp_enabled":false,
+         "del_pending":false,
+         "is_mgmt":false,
+         "connected":true,
+         "vnic_networks":[
+            {
+               "ip":{
+                  "ip_addr":{
+                     "type":"V4",
+                     "addr":"192.168.1.225"
+                  },
+                  "mask":24
+               },
+               "ctlr_alloc":false,
+               "mode":"STATIC"
+            }
+         ],
+         "vrf_id":0,
+         "mtu":1500,
+         "linux_name":"eth2",
+         "vlan_id":0,
+         "vrf_ref":"$milos_vrf"
+      },
+      {
+         "port_uuid":"Unknown",
+         "is_portchannel":false,
+         "can_se_dp_takeover":true,
+         "is_avi_internal_network":false,
+         "adapter":"Unknown",
+         "enabled":true,
+         "if_name":"eth3",
+         "dhcp_enabled":false,
+         "del_pending":false,
+         "is_mgmt":false,
+         "connected":true,
+         "mac_address":"00:0c:29:bd:98:15",
+         "vrf_id":0,
+         "mtu":1500,
+         "linux_name":"eth3",
+         "vlan_id":0,
+         "vrf_ref":"$milos_vrf"
+      }
+   ]
+}
+EOF)
+#Update the IP addr for data nics
+if [[ "$url_base" =~ $ip_3 ]]; then
+  curl -k -s -XPUT $milos_se_url -H "X-Csrftoken: $milos_csrf" \
+  -H "X-Avi-Tenant: admin" -H "Content-Type: application/json" \
+  -H "Referer: $milos_refer" --cookie "$milos_cookie" \
+  -d "$se_11_json_data"
+fi
+if [[ "$url_base" =~ $ip_8 ]]; then
+  curl -k -s -XPUT $milos_se_url -H "X-Csrftoken: $milos_csrf" \
+  -H "X-Avi-Tenant: admin" -H "Content-Type: application/json" \
+  -H "Referer: $milos_refer" --cookie "$milos_cookie" \
+  -d "$se_12_json_data"
+fi
+
+sleep 3
 
 #Get vrf
 milos_vrf=$(curl -k -s $url_base/vrfcontext -H "X-Csrftoken: $milos_csrf" \
