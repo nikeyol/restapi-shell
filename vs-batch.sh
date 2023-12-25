@@ -1,12 +1,12 @@
 #!/bin/sh
-set -vx
+#set -vx
 url_base="https://192.168.1.3/api"
 
 
 content_type="application/json"
 milos_tenant="admin"
-milos_csrf="7Ty5xYN6vjNlF2QzSdRjBlevQqP23wsJ"
-milos_cookie="sessionid=qxlis4t4advtugspvelook1himo4nr64; csrftoken=7Ty5xYN6vjNlF2QzSdRjBlevQqP23wsJ"
+milos_csrf="DR8zu8o4nvt4yyNCP4ClK4KQ5dof8guD"
+milos_cookie="csrftoken=DR8zu8o4nvt4yyNCP4ClK4KQ5dof8guD; sessionid=d5xr2be0091wy4krbbpys68amfixddmd"
 milos_refer="https://192.168.1.3/"
 
 milos_appfile="applicationprofile"
@@ -45,6 +45,8 @@ milos_se=$(curl -k -s $url_base/serviceengine -H "X-Csrftoken: $milos_csrf" \
 --cookie "$milos_cookie" | jq -r '.results[0].url')
 echo "se url is $milos_se"
 sleep 3
+
+#Config Data Nic IP for SE
 
 
 #Get vrf
@@ -205,6 +207,27 @@ if [ -n "$resp" ]; then
   done
 fi
 
+echo "deleting http policy set\n"
+resp=$(curl -k -s $url_base/httppolicyset -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" |grep "HTTP-FullProxy-Basic-1-HTTP-Policy-Set")
+if [ -n "$resp" ]; then
+  echo "delete the existing hm config"
+  curl -k -s -XDELETE -H "X-Csrftoken: $milos_csrf" \
+  -H "X-Avi-Tenant: admin" \
+  -H "Content-Type: application/json" \
+  -H "Referer: $milos_refer" \
+  --cookie "$milos_cookie" \
+  $(curl -k -s $url_base/httppolicyset -H "X-Csrftoken: $milos_csrf" \
+  -H "X-Avi-Tenant: admin" \
+  -H "Content-Type: application/json" \
+  -H "Referer: $milos_refer" \
+  --cookie "$milos_cookie" | jq -r '.results[] | select(.name == "HTTP-FullProxy-Basic-1-HTTP-Policy-Set") | .url')
+fi
+sleep 3
+
 echo "hm_json_data is $hm_json_data\n"
 resp=$(curl -k -s $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
 -H "X-Avi-Tenant: admin" \
@@ -230,10 +253,74 @@ milos_hm_url=$(curl -k -s -XPOST $url_base/healthmonitor -H "X-Csrftoken: $milos
 -H "X-Avi-Tenant: admin" \
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
---cookie "$milos_cookie" -d "$hm_json_data" | jq -r '.url')
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "HM-TCP-1") | .url')
 echo "milos_hm_url is $milos_hm_url"
 sleep 3
 
+milos_hm_system_http_url=$(curl -k -s -X= $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "System-HTTP") | .url')
+echo "milos_hm_system_http_url is $milos_hm_system_http_url"
+sleep 3
+
+milos_hm_system_ping_url=$(curl -k -s -XGET $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "System-Ping") | .url')
+echo "milos_hm_system_ping_url is $milos_hm_system_ping_url"
+sleep 3
+
+milos_hm_system_tcp_url=$(curl -k -s -XGET $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "System-TCP") | .url')
+echo "milos_hm_system_tcp_url is $milos_hm_system_tcp_url"
+sleep 3
+
+milos_hm_system_udp_url=$(curl -k -s -XGET $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "System-UDP") | .url')
+echo "milos_hm_system_udp_url is $milos_hm_system_udp_url"
+sleep 3
+
+milos_hm_system_dns_url=$(curl -k -s -XGET $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "System-DNS") | .url')
+echo "milos_hm_system_dns_url is $milos_hm_system_dns_url"
+sleep 3
+
+milos_hm_system_perl_url=$(curl -k -s -XGET $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "System-Xternal-Perl") | .url')
+echo "milos_hm_system_perl_url is $milos_hm_system_perl_url"
+sleep 3
+
+milos_hm_system_shell_url=$(curl -k -s -XGET $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "System-Xternal-Shell") | .url')
+echo "milos_hm_system_shell_url is $milos_hm_system_shell_url"
+sleep 3
+
+
+milos_hm_system_python_url=$(curl -k -s -XGET $url_base/healthmonitor -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$hm_json_data" |jq -r '.results[] | select(.name == "System-Xternal-Python") | .url')
+echo "milos_hm_system_python_url is $milos_hm_system_python_url"
+sleep 3
 
 #network data
 network_10_json_data="$(cat <<EOF
@@ -370,9 +457,18 @@ ssl_profile_url=$(curl -s -k -X POST $url_base/sslprofile  \
 -H "Content-Type: application/json" \
 -H "Referer: https://192.168.1.3/" \
 --cookie "$milos_cookie" \
--d "$ssl_profile_json_data"|jq -r '.url')
+-d "$ssl_profile_json_data"|jq -r '.results[] | select(.name=="test-tls1.0-1") | .url')
 
 echo "ssl_profile_url is $ssl_profile_url"
+
+ssl_profile_standard_url=$(curl -s -k -X GET $url_base/sslprofile  \
+-H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: https://192.168.1.3/" \
+--cookie "$milos_cookie" \
+-d "$ssl_profile_json_data"|jq -r '.results[] | select(.name=="System-Standard") | .url')
+
 
 #system ssl profile
 ssl_profile_standard_url=$(curl -s -k -XGET $url_base/sslprofile  \
@@ -479,12 +575,44 @@ echo "ssl_certificate_url url is $ssl_certificate_url"
 sleep 3
 
 #Get Persistence profile
-milos_persistence_profile=$(curl -s -k -XGET $url_base/applicationpersistenceprofile -H "X-Csrftoken: $milos_csrf" \
+milos_persistence_http_cookie_profile=$(curl -s -k -XGET $url_base/applicationpersistenceprofile -H "X-Csrftoken: $milos_csrf" \
 -H "X-Avi-Tenant: admin" \
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
---cookie "$milos_cookie" | jq -r '.results[3].url')
-echo "milos_persistence_profile url is $milos_persistence_profile"
+--cookie "$milos_cookie" | jq -r '.results[] | select(.name=="System-Persistence-Http-Cookie") | .url')
+echo "milos_persistence_http_cookie_profile url is $milos_persistence_http_cookie_profile"
+sleep 3
+
+milos_persistence_http_header_profile=$(curl -s -k -XGET $url_base/applicationpersistenceprofile -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" | jq -r '.results[] | select(.name=="System-Persistence-Custom-Http-Header") | .url')
+echo "milos_persistence_http_header_profile url is $milos_persistence_http_header_profile"
+sleep 3
+
+milos_persistence_app_cookie_profile=$(curl -s -k -XGET $url_base/applicationpersistenceprofile -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" | jq -r '.results[] | select(.name=="System-Persistence-App-Cookie") | .url')
+echo "milos_persistence_app_cookie_profile url is $milos_persistence_app_cookie_profile"
+sleep 3
+
+milos_persistence_tls_profile=$(curl -s -k -XGET $url_base/applicationpersistenceprofile -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" | jq -r '.results[] | select(.name=="System-Persistence-TLS") | .url')
+echo "milos_persistence_tls_profile url is $milos_persistence_tls_profile"
+sleep 3
+
+milos_persistence_clientip_profile=$(curl -s -k -XGET $url_base/applicationpersistenceprofile -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" | jq -r '.results[] | select(.name=="System-Persistence-Client-IP") | .url')
+echo "milos_persistence_clientip_profile url is $milos_persistence_clientip_profile"
 sleep 3
 
 
@@ -612,7 +740,7 @@ milos_vs1=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs1_json_data")
-echo "milos_vs1 url is $milos_vs1"
+#echo "milos_vs1 url is $milos_vs1"
 sleep 3
 
 pool2_json_data=$(cat <<EOF
@@ -716,7 +844,7 @@ milos_vs2=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs2_json_data")
-echo "milos_vs2 url is $milos_vs2"
+#echo "milos_vs2 url is $milos_vs2"
 sleep 3
 
 pool3_json_data=$(cat <<EOF
@@ -868,7 +996,7 @@ milos_vs3=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs3_json_data")
-echo "milos_vs3 url is $milos_vs3"
+#echo "milos_vs3 url is $milos_vs3"
 sleep 3
 
 
@@ -991,7 +1119,7 @@ milos_vs4=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs4_json_data")
-echo "milos_vs4 url is $milos_vs4"
+#echo "milos_vs4 url is $milos_vs4"
 sleep 3
 
 
@@ -1147,7 +1275,7 @@ milos_vs5=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs5_json_data")
-echo "milos_vs5 url is $milos_vs5"
+#echo "milos_vs5 url is $milos_vs5"
 sleep 3
 
 pool6_json_data=$(cat <<EOF
@@ -1303,7 +1431,7 @@ milos_vs6=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs6_json_data")
-echo "milos_vs6 url is $milos_vs6"
+#echo "milos_vs6 url is $milos_vs6"
 sleep 3
 
 pool7_json_data=$(
@@ -1362,7 +1490,7 @@ vs7_json_data=$(cat <<EOF
 {
    "name":"TCP-FullProxy-Basic-1",
    "enabled":true,
-   "network_profile_ref":"$milos_network_profile_tcp",
+   "network_profile_ref":"$milos_network_profile_udp_per_packet",
    "se_group_ref":"$milos_seg",
    "vrf_context_ref":"$milos_vrf",
    "analytics_profile_ref":"$milos_anaylitics_profile",
@@ -1408,7 +1536,7 @@ milos_vs7=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs7_json_data")
-echo "milos_vs7 url is $milos_vs7"
+#echo "milos_vs7 url is $milos_vs7"
 sleep 3
 
 pool8_json_data=$(cat <<EOF
@@ -1522,7 +1650,7 @@ milos_vs8=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs8_json_data")
-echo "milos_vs8 url is $milos_vs8"
+#echo "milos_vs8 url is $milos_vs8"
 sleep 3
 
 pool9_json_data=$(cat <<EOF
@@ -1584,57 +1712,59 @@ echo "milos_pool9 url is $milos_pool9"
 sleep 3
 
 vs9_json_data=$(cat <<EOF
-"name":"UDP-FullProxy-No-SNAT",
-   "enabled":true,
-   "network_profile_ref":"https://192.168.1.3/api/networkprofile/networkprofile-faf37bba-eb25-4f9e-8955-72f9b984121c",
-   "se_group_ref":"https://192.168.1.3/api/serviceenginegroup/serviceenginegroup-fd986b81-a5d1-4b7d-9fd3-50f35a98e7d4",
-   "vrf_context_ref":"https://192.168.1.3/api/vrfcontext/vrfcontext-cb4a70f0-fa8e-4c96-8a82-d7511a199a2d",
-   "analytics_profile_ref":"https://192.168.1.3/api/analyticsprofile/analyticsprofile-e5c9af34-39e8-4b37-829f-b16005d55cda",
-   "tenant_ref":"https://192.168.1.3/api/tenant/admin",
-   "cloud_ref":"https://192.168.1.3/api/cloud/cloud-61ad77a9-427a-4a1a-9192-d1584a79ce99",
-   "weight":1,
-   "flow_dist":"LOAD_AWARE",
-   "ip_address":{
-      "type":"V4",
-      "addr":"192.168.1.156"
-   },
-   "delay_fairness":false,
-   "avi_allocated_vip":false,
-   "cloud_type":"CLOUD_NONE",
-   "avi_allocated_fip":false,
-   "scaleout_ecmp":false,
-   "max_cps_per_client":0,
-   "type":"VS_TYPE_NORMAL",
-   "use_bridge_ip_as_vip":false,
-   "application_profile_ref":"https://192.168.1.3/api/applicationprofile/applicationprofile-0197d526-02b9-4a37-b545-1499ddababf6",
-   "auto_allocate_floating_ip":false,
-   "services":[
-      {
-         "enable_ssl":false,
-         "port_range_end":53,
-         "port":53
-      }
-   ],
-   "active_standby_se_tag":"ACTIVE_STANDBY_SE_1",
-   "pool_ref":"https://192.168.1.37/api/pool/pool-496b5176-7cfd-4d5a-a823-c835c486f095",
-   "ign_pool_net_reach":false,
-   "east_west_placement":false,
-   "limit_doser":false,
-   "ssl_sess_cache_avg_size":1024,
-   "enable_autogw":true,
-   "auto_allocate_ip":false,
-   "remove_listening_port_on_vs_down":false,
-   "analytics_policy":{
-      "client_insights":"ACTIVE",
-      "metrics_realtime_update":{
-         "duration":0,
-         "enabled":true
-      },
-      "full_client_logs":{
-         "duration":0,
-         "enabled":true
-      }
-   }
+{
+    "name": "UDP-FullProxy-No-SNAT",
+    "enabled": true,
+    "network_profile_ref": "$milos_network_profile_udp_fast",
+    "se_group_ref": "$milos_seg",
+    "vrf_context_ref": "$milos_vrf",
+    "analytics_profile_ref": "$milos_anaylitics_profile",
+    "tenant_ref": "$tenant",
+    "cloud_ref": "$milos_cloud",
+    "weight": 1,
+    "flow_dist": "LOAD_AWARE",
+    "ip_address": {
+        "type": "V4",
+        "addr": "192.168.1.156"
+    },
+    "delay_fairness": false,
+    "avi_allocated_vip": false,
+    "cloud_type": "CLOUD_NONE",
+    "avi_allocated_fip": false,
+    "scaleout_ecmp": false,
+    "max_cps_per_client": 0,
+    "type": "VS_TYPE_NORMAL",
+    "use_bridge_ip_as_vip": false,
+    "application_profile_ref": "$milos_app_profile_L4",
+    "auto_allocate_floating_ip": false,
+    "services": [
+        {
+            "enable_ssl": false,
+            "port_range_end": 53,
+            "port": 53
+        }
+    ],
+    "active_standby_se_tag": "ACTIVE_STANDBY_SE_1",
+    "pool_ref": "$milos_pool9",
+    "ign_pool_net_reach": false,
+    "east_west_placement": false,
+    "limit_doser": false,
+    "ssl_sess_cache_avg_size": 1024,
+    "enable_autogw": true,
+    "auto_allocate_ip": false,
+    "remove_listening_port_on_vs_down": false,
+    "analytics_policy": {
+        "client_insights": "ACTIVE",
+        "metrics_realtime_update": {
+            "duration": 0,
+            "enabled": true
+        },
+        "full_client_logs": {
+            "duration": 0,
+            "enabled": true
+        }
+    }
+}
 EOF)
 
 milos_vs9=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_csrf" \
@@ -1642,5 +1772,994 @@ milos_vs9=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_c
 -H "Content-Type: application/json" \
 -H "Referer: $milos_refer" \
 --cookie "$milos_cookie" -d "$vs9_json_data")
-echo "milos_vs9 url is $milos_vs9"
+#echo "milos_vs9 url is $milos_vs9"
 sleep 3
+
+pool_cs_json_data=$(cat <<EOF
+{
+"name": "CS-Pool",
+"server_count": 2,
+"enabled": true,
+"tenant_ref": "$tenant",
+"cloud_ref": "$milos_cloud",
+"lb_algorithm": "LB_ALGORITHM_ROUND_ROBIN",
+"use_service_port": false,
+"server_auto_scale": false,
+"host_check_enabled": false,
+"capacity_estimation": false,
+"servers": [
+{
+"hostname": "10.0.0.100",
+"ratio": 1,
+"ip": {
+"type": "V4",
+"addr": "10.0.0.100"
+},
+"enabled": true,
+"verify_network": false,
+"static": false,
+"resolve_server_by_dns": false,
+"prst_hdr_val": "",
+"port": 9093
+},
+{
+"hostname": "10.0.0.100",
+"ratio": 1,
+"ip": {
+"type": "V4",
+"addr": "10.0.0.100"
+},
+"enabled": true,
+"verify_network": false,
+"static": false,
+"resolve_server_by_dns": false,
+"prst_hdr_val": "",
+"port": 9094
+}
+],
+"fewest_tasks_feedback_delay": 10,
+"fail_action": {
+"type": "FAIL_ACTION_CLOSE_CONN"
+},
+"graceful_disable_timeout": 1,
+"vrf_ref": "$milos_vrf",
+"inline_health_monitor": true,
+"default_server_port": 80,
+"request_queue_depth": 128,
+"server_reselect": {
+"retry_nonidempotent": false,
+"enabled": false,
+"num_retries": 4
+},
+"sni_enabled": true,
+"request_queue_enabled": false,
+"max_concurrent_connections_per_server": 0,
+"connection_ramp_duration": 10
+}
+EOF)
+milos_pool_cs=$(curl -s -k -XPOST $url_base/pool -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$pool_cs_json_data" |jq -r '.url')
+echo "milos_pool_cs url is $milos_pool_cs"
+sleep 3
+
+pool10_json_data=$(cat <<EOF
+{
+"name": "HTTP-FullProxy-Basic-1-pool",
+"server_count": 2,
+"enabled": true,
+"tenant_ref": "$tenant",
+"cloud_ref": "$milos_cloud",
+"lb_algorithm": "LB_ALGORITHM_LEAST_CONNECTIONS",
+"use_service_port": false,
+"server_auto_scale": false,
+"host_check_enabled": false,
+"capacity_estimation": false,
+"servers": [
+{
+"hostname": "10.0.0.100",
+"ratio": 1,
+"ip": {
+"type": "V4",
+"addr": "10.0.0.100"
+},
+"enabled": true,
+"verify_network": false,
+"static": false,
+"resolve_server_by_dns": false,
+"port": 9091
+},
+{
+"hostname": "10.0.0.100",
+"ratio": 1,
+"ip": {
+"type": "V4",
+"addr": "10.0.0.100"
+},
+"enabled": true,
+"verify_network": false,
+"static": false,
+"resolve_server_by_dns": false,
+"prst_hdr_val": "",
+"port": 9092
+}
+],
+"fewest_tasks_feedback_delay": 10,
+"fail_action": {
+"type": "FAIL_ACTION_CLOSE_CONN"
+},
+"graceful_disable_timeout": 1,
+"vrf_ref": "$miloa_vrf",
+"inline_health_monitor": true,
+"default_server_port": 80,
+"request_queue_depth": 128,
+"server_reselect": {
+"retry_nonidempotent": false,
+"enabled": false,
+"num_retries": 4
+},
+"sni_enabled": true,
+"request_queue_enabled": false,
+"max_concurrent_connections_per_server": 0,
+"health_monitor_refs": [
+"$milos_hm_url"
+],
+"connection_ramp_duration": 10
+}
+EOF)
+milos_pool10=$(curl -s -k -XPOST $url_base/pool -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$pool10_json_data" |jq -r '.url')
+echo "milos_pool10 url is $milos_pool10"
+sleep 3
+
+echo "delete existing http policy set\n"
+resp=$(curl -k -s $url_base/httppolicyset  \
+-H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie"|jq -r '.results[].url')
+if [ -n "$resp" ]; then
+  for url in $resp; do
+    echo "deleting http policy set: $url"
+    curl -k -s -XDELETE $url -H "X-Csrftoken: $milos_csrf" \
+    -H "X-Avi-Tenant: admin" \
+    -H "Content-Type: application/json" \
+    -H "Referer: $milos_refer" \
+    --cookie "$milos_cookie"
+  done
+fi
+
+http_policy_set_json_data=$(cat <<EOF
+{
+    "name": "HTTP-FullProxy-Basic-1-HTTP-Policy-Set",
+    "tenant_ref": "$tenant",
+    "http_request_policy": {
+    "rules": [
+    {
+    "index": 1,
+    "enable": true,
+    "log": true,
+    "switching_action": {
+    "action": "HTTP_SWITCHING_SELECT_POOL",
+    "status_code": "HTTP_LOCAL_RESPONSE_STATUS_CODE_200",
+    "pool_ref": "$milos_pool_cs"
+    },
+    "all_headers": true,
+    "match": {
+    "path": {
+    "match_case": "INSENSITIVE",
+    "match_str": [
+    "/foo",
+    "/bar"
+    ],
+    "match_criteria": "BEGINS_WITH"
+    },
+    "hdrs": [
+    {
+    "match_case": "INSENSITIVE",
+    "hdr": "test",
+    "value": [
+    "test"
+    ],
+    "match_criteria": "HDR_CONTAINS"
+    }
+    ]
+    },
+    "name": "Rule 1"
+    }
+    ]
+    },
+    "is_internal_policy": false
+    }
+EOF)
+milos_http_policyset_1=$(curl -s -k -XPOST $url_base/httppolicyset -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$http_policy_set_json_data" |jq -r '.url')
+echo "milos_http_policyset_1 url is $milos_http_policyset_1"
+sleep 10
+
+vs10_json_data=$(cat <<EOF
+{
+    "name": "HTTP-FullProxy-Basic-1",
+    "enabled": true,
+    "network_profile_ref": "$milos_network_profile_tcp",
+    "se_group_ref": "$milos_seg",
+    "vrf_context_ref": "$milos_vrf",
+    "analytics_profile_ref": "$milos_anaylitics_profile",
+    "tenant_ref": "$tenant",
+    "cloud_ref": "$milos_cloud",
+    "auto_allocate_ip": false,
+    "weight": 1,
+    "flow_dist": "LOAD_AWARE",
+    "delay_fairness": false,
+    "avi_allocated_vip": false,
+    "http_policies": [
+    {
+    "index": 11,
+    "http_policy_set_ref": "$milos_http_policyset_1"
+    }
+    ],
+    "cloud_type": "CLOUD_NONE",
+    "avi_allocated_fip": false,
+    "scaleout_ecmp": false,
+    "max_cps_per_client": 0,
+    "redis_db": 6,
+    "pool_ref": "$milos_pool10",
+    "type": "VS_TYPE_NORMAL",
+    "use_bridge_ip_as_vip": false,
+    "redis_port": 5023,
+    "application_profile_ref": "$milos_app_profile_http",
+    "auto_allocate_floating_ip": false,
+    "ip_address": {
+    "type": "V4",
+    "addr": "192.168.1.150"
+    },
+    "ign_pool_net_reach": false,
+    "east_west_placement": false,
+    "limit_doser": false,
+    "ssl_sess_cache_avg_size": 1024,
+    "enable_autogw": true,
+    "remove_listening_port_on_vs_down": false,
+    "services": [
+    {
+    "enable_ssl": false,
+    "port_range_end": 80,
+    "port": 80
+    }
+    ],
+    "analytics_policy": {
+    "client_insights": "ACTIVE",
+    "metrics_realtime_update": {
+    "duration": 0,
+    "enabled": true
+    },
+    "full_client_logs": {
+    "duration": 0,
+    "enabled": true
+    }
+    }
+    }
+EOF)
+milos_vs10=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$vs10_json_data")
+#echo "milos_vs10 url is $milos_vs10"
+sleep 3
+
+pool11_json_data=$(cat <<EOF
+{
+    "name": "TCP-FullProxy-Basic-2-pool",
+    "server_count": 2,
+    "enabled": true,
+    "tenant_ref": "$tenant",
+    "cloud_ref": "$milos_cloud",
+    "lb_algorithm": "LB_ALGORITHM_ROUND_ROBIN",
+    "use_service_port": false,
+    "server_auto_scale": false,
+    "host_check_enabled": false,
+    "capacity_estimation": false,
+    "servers": [
+    {
+    "hostname": "10.0.0.200",
+    "ratio": 1,
+    "ip": {
+    "type": "V4",
+    "addr": "10.0.0.100"
+    },
+    "enabled": true,
+    "verify_network": false,
+    "static": false,
+    "resolve_server_by_dns": false,
+    "port": 9093
+    },
+    {
+    "hostname": "10.0.0.100",
+    "ratio": 1,
+    "ip": {
+    "type": "V4",
+    "addr": "10.0.0.100"
+    },
+    "enabled": true,
+    "verify_network": false,
+    "static": false,
+    "resolve_server_by_dns": false,
+    "prst_hdr_val": "",
+    "port": 9094
+    }
+    ],
+    "fewest_tasks_feedback_delay": 10,
+    "fail_action": {
+    "type": "FAIL_ACTION_CLOSE_CONN"
+    },
+    "vrf_ref": "$milos_vrf",
+    "inline_health_monitor": true,
+    "default_server_port": 80,
+    "request_queue_depth": 128,
+    "graceful_disable_timeout": 1,
+    "sni_enabled": true,
+    "request_queue_enabled": false,
+    "max_concurrent_connections_per_server": 0,
+    "connection_ramp_duration": 10
+}
+EOF)
+milos_pool11=$(curl -s -k -XPOST $url_base/pool -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$pool11_json_data" |jq -r '.url')
+echo "milos_pool11 url is $milos_pool11"
+sleep 3
+
+vs11_json_data=$(cat <<EOF
+{
+    "network_profile_ref": "$milos_network_profile_tcp",
+    "auto_allocate_ip": false,
+    "weight": 1,
+    "tenant_ref": "$tenant",
+    "flow_dist": "LOAD_AWARE",
+    "delay_fairness": false,
+    "avi_allocated_vip": false,
+    "vrf_context_ref": "$milos_vrf",
+    "analytics_profile_ref": "$milos_anaylitics_profile",
+    "cloud_type": "CLOUD_NONE",
+    "cloud_ref": "$milos_cloud",
+    "avi_allocated_fip": false,
+    "se_group_ref": "$milos_seg",
+    "scaleout_ecmp": false,
+    "max_cps_per_client": 0,
+    "pool_ref": "$milos_pool11",
+    "type": "VS_TYPE_NORMAL",
+    "use_bridge_ip_as_vip": false,
+    "application_profile_ref": "$milos_app_profile_L4",
+    "auto_allocate_floating_ip": false,
+    "services": [
+    {
+    "enable_ssl": false,
+    "port_range_end": 5050,
+    "port": 5050
+    }
+    ],
+    "active_standby_se_tag": "ACTIVE_STANDBY_SE_1",
+    "ip_address": {
+    "type": "V4",
+    "addr": "192.168.1.153"
+    },
+    "ign_pool_net_reach": false,
+    "east_west_placement": false,
+    "limit_doser": false,
+    "name": "TCP-FullProxy-Basic-2",
+    "ssl_sess_cache_avg_size": 1024,
+    "enable_autogw": true,
+    "enabled": true,
+    "remove_listening_port_on_vs_down": false,
+    "analytics_policy": {
+    "client_insights": "ACTIVE",
+    "metrics_realtime_update": {
+    "duration": 0,
+    "enabled": false
+    },
+    "full_client_logs": {
+    "duration": 0,
+    "enabled": true
+    }
+    }
+}
+EOF)
+milos_vs11=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$vs11_json_data")
+#echo "milos_vs11 url is $milos_vs11"
+sleep 3
+
+pool12_json_data=$(cat <<EOF
+{
+      "name": "HTTP-Pool-Encryt-pool",
+      "server_count": 3,
+      "enabled": true,
+      "tenant_ref": "$tenant",
+      "cloud_ref": "$milos_cloud",
+      "lb_algorithm": "LB_ALGORITHM_ROUND_ROBIN",
+      "use_service_port": false,
+      "server_auto_scale": false,
+      "host_check_enabled": false,
+      "capacity_estimation": false,
+      "servers": [
+      {
+      "hostname": "10.0.0.100",
+      "ratio": 1,
+      "ip": {
+      "type": "V4",
+      "addr": "10.0.0.100"
+      },
+      "enabled": true,
+      "verify_network": false,
+      "static": false,
+      "resolve_server_by_dns": false,
+      "prst_hdr_val": "",
+      "port": 443
+      },
+      {
+      "hostname": "10.0.0.101",
+      "ratio": 1,
+      "ip": {
+      "type": "V4",
+      "addr": "10.0.0.101"
+      },
+      "enabled": true,
+      "verify_network": false,
+      "static": false,
+      "resolve_server_by_dns": false,
+      "prst_hdr_val": "",
+      "port": 443
+      },
+      {
+      "hostname": "10.0.0.102",
+      "ratio": 1,
+      "ip": {
+      "type": "V4",
+      "addr": "10.0.0.102"
+      },
+      "enabled": true,
+      "verify_network": false,
+      "static": false,
+      "resolve_server_by_dns": false,
+      "prst_hdr_val": "",
+      "port": 443
+      }
+      ],
+      "fewest_tasks_feedback_delay": 10,
+      "fail_action": {
+      "type": "FAIL_ACTION_CLOSE_CONN"
+      },
+      "ssl_profile_ref": "$ssl_profile_standard_url",
+      "ssl_key_and_certificate_ref": "$ssl_certificate_url",
+      "server_reselect": {
+      "retry_nonidempotent": false,
+      "enabled": false,
+      "num_retries": 4
+      },
+      "vrf_ref": "$milos_vrf",
+      "inline_health_monitor": true,
+      "default_server_port": 80,
+      "request_queue_depth": 128,
+      "graceful_disable_timeout": 1,
+      "sni_enabled": true,
+      "request_queue_enabled": false,
+      "max_concurrent_connections_per_server": 0,
+      "connection_ramp_duration": 10
+}
+EOF)
+milos_pool12=$(curl -s -k -XPOST $url_base/pool -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$pool12_json_data" |jq -r '.url')
+echo "milos_pool12 url is $milos_pool12"
+sleep 3
+
+vs12_json_data=$(cat <<EOF
+{
+    "network_profile_ref": "$milos_network_profile_tcp",
+    "weight": 1,
+    "tenant_ref": "$tenant",
+    "flow_dist": "LOAD_AWARE",
+    "ip_address": {
+    "type": "V4",
+    "addr": "192.168.1.165"
+    },
+    "delay_fairness": false,
+    "avi_allocated_vip": false,
+    "vrf_context_ref": "$milos_vrf",
+    "analytics_profile_ref": "$milos_anaylitics_profile",
+    "cloud_type": "CLOUD_NONE",
+    "cloud_ref": "$milos_cloud",
+    "avi_allocated_fip": false,
+    "se_group_ref": "$milos_seg",
+    "scaleout_ecmp": false,
+    "max_cps_per_client": 0,
+    "type": "VS_TYPE_NORMAL",
+    "use_bridge_ip_as_vip": false,
+    "application_profile_ref": "$milos_app_profile_http",
+    "auto_allocate_floating_ip": false,
+    "services": [
+    {
+    "enable_ssl": false,
+    "port_range_end": 80,
+    "port": 80
+    }
+    ],
+    "active_standby_se_tag": "ACTIVE_STANDBY_SE_1",
+    "pool_ref": "$milos_pool12",
+    "ign_pool_net_reach": false,
+    "east_west_placement": false,
+    "limit_doser": false,
+    "name": "HTTP-Pool-Encryt",
+    "ssl_sess_cache_avg_size": 1024,
+    "enable_autogw": true,
+    "auto_allocate_ip": false,
+    "enabled": true,
+    "remove_listening_port_on_vs_down": false,
+    "analytics_policy": {
+    "client_insights": "ACTIVE",
+    "metrics_realtime_update": {
+    "duration": 0,
+    "enabled": true
+    },
+    "full_client_logs": {
+    "duration": 0,
+    "enabled": true
+    }
+    }
+}
+EOF)
+milos_vs12=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$vs12_json_data")
+#echo "milos_vs12 url is $milos_vs12"
+sleep 3
+
+pool13_json_data=$(cat <<EOF
+{
+    "name": "HTTP-FullProxy-Adv-2-pool",
+    "server_count": 2,
+    "enabled": true,
+    "tenant_ref": "$tenant",
+    "cloud_ref": "$milos_cloud",
+    "lb_algorithm": "LB_ALGORITHM_ROUND_ROBIN",
+    "use_service_port": false,
+    "server_auto_scale": false,
+    "host_check_enabled": false,
+    "capacity_estimation": false,
+    "servers": [
+    {
+    "hostname": "10.0.0.100",
+    "ratio": 1,
+    "ip": {
+    "type": "V4",
+    "addr": "10.0.0.100"
+    },
+    "enabled": true,
+    "verify_network": false,
+    "static": false,
+    "resolve_server_by_dns": false,
+    "prst_hdr_val": "",
+    "port": 9093
+    },
+    {
+    "hostname": "10.0.0.100",
+    "ratio": 1,
+    "ip": {
+    "type": "V4",
+    "addr": "10.0.0.100"
+    },
+    "enabled": true,
+    "verify_network": false,
+    "static": false,
+    "resolve_server_by_dns": false,
+    "prst_hdr_val": "",
+    "port": 9094
+    }
+    ],
+    "fewest_tasks_feedback_delay": 10,
+    "fail_action": {
+    "type": "FAIL_ACTION_CLOSE_CONN"
+    },
+    "graceful_disable_timeout": 1,
+    "vrf_ref": "$milos_vrf",
+    "inline_health_monitor": true,
+    "default_server_port": 80,
+    "request_queue_depth": 128,
+    "server_reselect": {
+    "retry_nonidempotent": false,
+    "enabled": false,
+    "num_retries": 4
+    },
+    "sni_enabled": true,
+    "request_queue_enabled": true,
+    "max_concurrent_connections_per_server": 0,
+    "connection_ramp_duration": 10
+}
+EOF)
+milos_pool13=$(curl -s -k -XPOST $url_base/pool -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$pool13_json_data" |jq -r '.url')
+echo "milos_pool13 url is $milos_pool13"
+sleep 3
+
+vs13_json_data=$(cat <<EOF
+{
+    "network_profile_ref": "$milos_network_profile_tcp",
+    "auto_allocate_ip": false,
+    "weight": 1,
+    "tenant_ref": "$tenant",
+    "flow_dist": "LOAD_AWARE",
+    "delay_fairness": false,
+    "avi_allocated_vip": false,
+    "vrf_context_ref": "$milos_vrf",
+    "analytics_profile_ref": "$milos_anaylitics_profile",
+    "cloud_type": "CLOUD_NONE",
+    "cloud_ref": "$milos_cloud",
+    "avi_allocated_fip": false,
+    "se_group_ref": "$milos_seg",
+    "ssl_profile_ref": "$ssl_profile_standard_url",
+    "scaleout_ecmp": false,
+    "max_cps_per_client": 0,
+    "redis_db": 6,
+    "pool_ref": "milos_pool13",
+    "type": "VS_TYPE_NORMAL",
+    "ssl_key_and_certificate_refs": [
+    "$ssl_certificate_url"
+    ],
+    "use_bridge_ip_as_vip": false,
+    "redis_port": 5028,
+    "application_profile_ref": "$milos_app_profile_http",
+    "auto_allocate_floating_ip": false,
+    "active_standby_se_tag": "ACTIVE_STANDBY_SE_1",
+    "ip_address": {
+    "type": "V4",
+    "addr": "192.168.1.158"
+    },
+    "ign_pool_net_reach": false,
+    "east_west_placement": false,
+    "limit_doser": false,
+    "name": "HTTP-FullProxy-Adv-2",
+    "ssl_sess_cache_avg_size": 1024,
+    "enable_autogw": true,
+    "enabled": false,
+    "remove_listening_port_on_vs_down": false,
+    "services": [
+    {
+    "enable_ssl": true,
+    "port_range_end": 443,
+    "port": 443
+    }
+    ],
+    "analytics_policy": {
+    "client_insights": "ACTIVE",
+    "metrics_realtime_update": {
+    "duration": 0,
+    "enabled": true
+    },
+    "full_client_logs": {
+    "duration": 0,
+    "enabled": true
+    }
+    }
+}
+EOF)
+milos_vs13=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$vs13_json_data")
+#echo "milos_vs13 url is $milos_vs13"
+sleep 3
+
+pool14_json_data=$(cat <<EOF
+{
+    "name": "HTTP-FullProxy-Adv-3-pool",
+    "server_count": 2,
+    "enabled": true,
+    "tenant_ref": "$tenant",
+    "cloud_ref": "$milos_cloud",
+    "lb_algorithm": "LB_ALGORITHM_LEAST_CONNECTIONS",
+    "use_service_port": false,
+    "server_auto_scale": false,
+    "host_check_enabled": false,
+    "capacity_estimation": false,
+    "servers": [
+    {
+    "hostname": "192.168.1.25",
+    "ratio": 1,
+    "ip": {
+    "type": "V4",
+    "addr": "192.168.1.25"
+    },
+    "enabled": true,
+    "verify_network": false,
+    "static": false,
+    "resolve_server_by_dns": false,
+    "prst_hdr_val": "",
+    "port": 9091
+    },
+    {
+    "hostname": "192.168.1.25",
+    "ratio": 1,
+    "ip": {
+    "type": "V4",
+    "addr": "192.168.1.25"
+    },
+    "enabled": true,
+    "verify_network": false,
+    "static": false,
+    "resolve_server_by_dns": false,
+    "prst_hdr_val": "",
+    "port": 9092
+    }
+    ],
+    "fewest_tasks_feedback_delay": 10,
+    "fail_action": {
+    "type": "FAIL_ACTION_CLOSE_CONN"
+    },
+    "graceful_disable_timeout": 1,
+    "vrf_ref": "milos_vrf",
+    "inline_health_monitor": true,
+    "default_server_port": 80,
+    "request_queue_depth": 128,
+    "server_reselect": {
+    "retry_nonidempotent": false,
+    "enabled": false,
+    "num_retries": 4
+    },
+    "sni_enabled": true,
+    "request_queue_enabled": false,
+    "max_concurrent_connections_per_server": 0,
+    "connection_ramp_duration": 10
+}
+EOF)
+vs14_json_data=$(cat <<EOF
+{
+      "network_profile_ref": "$milos_network_profile_tcp",
+      "auto_allocate_ip": false,
+      "weight": 1,
+      "tenant_ref": "$tenant",
+      "flow_dist": "LOAD_AWARE",
+      "delay_fairness": false,
+      "avi_allocated_vip": false,
+      "vrf_context_ref": "$milos_vrf",
+      "analytics_profile_ref": "$milos_anaylitics_profile",
+      "cloud_type": "CLOUD_NONE",
+      "cloud_ref": "$milos_cloud",
+      "avi_allocated_fip": false,
+      "se_group_ref": "$milos_seg",
+      "scaleout_ecmp": false,
+      "max_cps_per_client": 0,
+      "pool_ref": "$milos_pool14",
+      "type": "VS_TYPE_NORMAL",
+      "use_bridge_ip_as_vip": false,
+      "application_profile_ref": "$milos_app_profile_http",
+      "auto_allocate_floating_ip": false,
+      "services": [
+      {
+      "enable_ssl": false,
+      "port_range_end": 80,
+      "port": 80
+      }
+      ],
+      "active_standby_se_tag": "ACTIVE_STANDBY_SE_1",
+      "ip_address": {
+      "type": "V4",
+      "addr": "10.0.0.150"
+      },
+      "ign_pool_net_reach": false,
+      "east_west_placement": false,
+      "limit_doser": false,
+      "name": "HTTP-FullProxy-Adv-3",
+      "ssl_sess_cache_avg_size": 1024,
+      "enable_autogw": true,
+      "enabled": false,
+      "remove_listening_port_on_vs_down": false,
+      "analytics_policy": {
+      "client_insights": "ACTIVE",
+      "metrics_realtime_update": {
+      "duration": 0,
+      "enabled": false
+      },
+      "full_client_logs": {
+      "duration": 0,
+      "enabled": true
+      }
+      }
+}
+EOF)
+milos_pool14=$(curl -s -k -XPOST $url_base/pool -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$pool14_json_data" |jq -r '.url')
+echo "milos_pool14 url is $milos_pool14"
+sleep 3
+milos_vs14=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$vs14_json_data")
+#echo "milos_vs13 url is $milos_vs13"
+sleep 3
+
+pool15_json_data=$(cat <<EOF
+{
+   "name":"UDP-FastPath-Adv-1-pool",
+   "server_count":1,
+   "enabled":true,
+   "tenant_ref":"$tenant",
+   "cloud_ref":"$milos_cloud",
+   "lb_algorithm":"LB_ALGORITHM_LEAST_CONNECTIONS",
+   "use_service_port":false,
+   "server_auto_scale":false,
+   "host_check_enabled":false,
+   "capacity_estimation":false,
+   "servers":[
+      {
+         "hostname":"10.0.0.201",
+         "ratio":1,
+         "ip":{
+            "type":"V4",
+            "addr":"10.0.0.201"
+         },
+         "enabled":true,
+         "verify_network":false,
+         "static":false,
+         "resolve_server_by_dns":false,
+         "prst_hdr_val":"",
+         "port":53
+      }
+   ],
+   "fewest_tasks_feedback_delay":10,
+   "fail_action":{
+      "type":"FAIL_ACTION_CLOSE_CONN"
+   },
+   "graceful_disable_timeout":1,
+   "vrf_ref":"$milos_vrf",
+   "inline_health_monitor":true,
+   "default_server_port":80,
+   "request_queue_depth":128,
+   "server_reselect":{
+      "retry_nonidempotent":false,
+      "enabled":false,
+      "num_retries":4
+   },
+   "sni_enabled":true,
+   "request_queue_enabled":false,
+   "max_concurrent_connections_per_server":0,
+   "connection_ramp_duration":10
+}
+EOF)
+vs15_json_data=$(cat <<EOF
+{
+    "network_profile_ref": "$milos_network_profile_udp_fast",
+    "auto_allocate_ip": false,
+    "weight": 1,
+    "tenant_ref": "$tenant",
+    "flow_dist": "LOAD_AWARE",
+    "delay_fairness": false,
+    "avi_allocated_vip": false,
+    "vrf_context_ref": "$milos_vrf",
+    "analytics_profile_ref": "$milos_anaylitics_profile",
+    "cloud_type": "CLOUD_NONE",
+    "cloud_ref": "$milos_cloud",
+    "avi_allocated_fip": false,
+    "se_group_ref": "$milos_seg",
+    "scaleout_ecmp": false,
+    "max_cps_per_client": 0,
+    "pool_ref": "$milos_pool15",
+    "type": "VS_TYPE_NORMAL",
+    "use_bridge_ip_as_vip": false,
+    "application_profile_ref": "$milos_app_profile_L4",
+    "auto_allocate_floating_ip": false,
+    "services": [
+    {
+    "enable_ssl": false,
+    "port_range_end": 53,
+    "port": 53
+    }
+    ],
+    "active_standby_se_tag": "ACTIVE_STANDBY_SE_1",
+    "ip_address": {
+    "type": "V4",
+    "addr": "192.168.1.155"
+    },
+    "ign_pool_net_reach": false,
+    "east_west_placement": false,
+    "limit_doser": false,
+    "name": "UDP-FastPath-Adv-1",
+    "ssl_sess_cache_avg_size": 1024,
+    "enable_autogw": true,
+    "enabled": true,
+    "remove_listening_port_on_vs_down": false,
+    "analytics_policy": {
+    "client_insights": "ACTIVE",
+    "metrics_realtime_update": {
+    "duration": 0,
+    "enabled": false
+    },
+    "full_client_logs": {
+    "duration": 0,
+    "enabled": false
+    }
+    }
+}
+EOF)
+milos_pool15=$(curl -s -k -XPOST $url_base/pool -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$pool15_json_data" |jq -r '.url')
+echo "milos_pool15 url is $milos_pool15"
+sleep 3
+milos_vs15=$(curl -k -s -XPOST $url_base/virtualservice -H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie" -d "$vs15_json_data")
+#echo "milos_vs15 url is $milos_vs15"
+sleep 3
+
+echo "Generating the test traffic..."
+resp=$(curl -k -s $url_base/virtualservice  \
+-H "X-Csrftoken: $milos_csrf" \
+-H "X-Avi-Tenant: admin" \
+-H "Content-Type: application/json" \
+-H "Referer: $milos_refer" \
+--cookie "$milos_cookie"|jq -r '.results[].url')
+if [ -n "$resp" ]; then
+  for i in {1..50}; do
+    for url in $resp; do
+      #echo "vs url: $url"
+      ip=$(curl -k -s -XGET $url -H "X-Csrftoken: $milos_csrf" \
+      -H "X-Avi-Tenant: admin" \
+      -H "Content-Type: application/json" \
+      -H "Referer: $milos_refer" \
+      --cookie "$milos_cookie"|jq -r '.ip_address.addr')
+      port=$(curl -k -s -XGET $url -H "X-Csrftoken: $milos_csrf" \
+      -H "X-Avi-Tenant: admin" \
+      -H "Content-Type: application/json" \
+      -H "Referer: $milos_refer" \
+      --cookie "$milos_cookie"|jq -r '.services[0].port')
+      profile_ref=$(curl -k -s -XGET $url -H "X-Csrftoken: $milos_csrf" \
+      -H "X-Avi-Tenant: admin" \
+      -H "Content-Type: application/json" \
+      -H "Referer: $milos_refer" \
+      --cookie "$milos_cookie" | jq -r '.network_profile_ref')
+      profile=$(curl -k -s -XGET $profile_ref -H "X-Csrftoken: $milos_csrf" \
+      -H "X-Avi-Tenant: admin" \
+      -H "Content-Type: application/json" \
+      -H "Referer: $milos_refer" \
+      --cookie "$milos_cookie" | jq -r '.name')
+      if [[ $port == 443 ]]; then
+        curl -k -s -XGET "https://$ip:$port"
+      elif [[ $port == 53 && "$profile" == "System-UDP-*" ]]; then
+        dig  a.test.local  @192.168.1.151 +short
+      else
+        curl -s -XGET "http://$ip:$port"
+      fi
+      sleep 1
+      done
+  done
+fi
